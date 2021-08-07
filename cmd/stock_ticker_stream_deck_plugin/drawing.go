@@ -56,7 +56,7 @@ func DrawTile(title string, price, change, changePercent float64, status string,
 		}, img)
 	}
 	drawLabel(&Label{
-		text:     fmt.Sprintf("%.2f", price),
+		text:     fmt.Sprintf("%.2f%%", changePercent),
 		fontName: "Lato-Bold.ttf",
 		fontSize: 14,
 		x:        4,
@@ -64,7 +64,7 @@ func DrawTile(title string, price, change, changePercent float64, status string,
 		clr:      white,
 	}, img)
 	drawLabel(&Label{
-		text:     fmt.Sprintf("%.2f %.2f%%", change, changePercent),
+		text:     fmt.Sprintf("%.1f, %.1f", price, change),
 		fontName: "Lato-Regular.ttf",
 		fontSize: 11,
 		x:        4,

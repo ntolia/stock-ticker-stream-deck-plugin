@@ -20,6 +20,7 @@ type tile struct {
 type plugin struct {
 	sd    *streamdeck.StreamDeck
 	tiles map[string]*tile
+	state bool
 }
 
 type evSdpiCollection struct {
@@ -34,7 +35,7 @@ type settingsType map[string]string
 
 func newPlugin(port, uuid, event, info string) *plugin {
 	sd := streamdeck.NewStreamDeck(port, uuid, event, info)
-	p := &plugin{sd: sd, tiles: make(map[string]*tile)}
+	p := &plugin{sd: sd, tiles: make(map[string]*tile), state: true}
 	sd.SetDelegate(p)
 	return p
 }
@@ -52,9 +53,17 @@ func (p *plugin) renderTile(t *tile, data api.Result) *[]byte {
 	case "POST", "POSTPOST", "PREPRE", "CLOSED":
 		statusColor = blue
 		status = ""
-		price = data.PostMarketPrice
-		change = data.PostMarketChange
-		changePercent = data.PostMarketChangePercent
+		// Swap between regular and pre
+		if p.state {
+			status = ""
+			price = data.RegularMarketPrice
+			change = data.RegularMarketChange
+			changePercent = data.RegularMarketChangePercent
+		} else {
+			price = data.PostMarketPrice
+			change = data.PostMarketChange
+			changePercent = data.PostMarketChangePercent
+		}
 	case "PRE":
 		status = ""
 		if data.PreMarketPrice > 0 {
@@ -105,10 +114,11 @@ func (p *plugin) updateTiles(tiles []*tile) {
 }
 
 func (p *plugin) startUpdateLoop() {
-	tick := time.Tick(5 * time.Minute)
+	tick := time.Tick(5 * time.Second)
 	for {
 		select {
 		case <-tick:
+			p.state = !p.state
 			var tiles []*tile
 			for _, t := range p.tiles {
 				tiles = append(tiles, t)
