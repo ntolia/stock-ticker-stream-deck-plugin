@@ -21,6 +21,7 @@ type plugin struct {
 	sd    *streamdeck.StreamDeck
 	tiles map[string]*tile
 	state bool
+	index map[string]string
 }
 
 type evSdpiCollection struct {
@@ -35,12 +36,18 @@ type settingsType map[string]string
 
 func newPlugin(port, uuid, event, info string) *plugin {
 	sd := streamdeck.NewStreamDeck(port, uuid, event, info)
-	p := &plugin{sd: sd, tiles: make(map[string]*tile), state: true}
+	index := map[string]string{
+		"^GSPC": "ES=F",  // S&P500
+		"^DJI":  "YM=F",  // Dow
+		"^IXIC": "NQ=F",  // NASDAQ
+		"^RUT":  "RTY=F", // Russell 2000
+	}
+	p := &plugin{sd: sd, tiles: make(map[string]*tile), state: true, index: index}
 	sd.SetDelegate(p)
 	return p
 }
 
-func (p *plugin) renderTile(t *tile, data api.Result) *[]byte {
+func (p *plugin) renderTile(t *tile, data api.Result, futureData api.Result) *[]byte {
 	var price, change, changePercent float64
 	var status string
 	statusColor := orange // regular/pre
@@ -63,6 +70,13 @@ func (p *plugin) renderTile(t *tile, data api.Result) *[]byte {
 			price = data.PostMarketPrice
 			change = data.PostMarketChange
 			changePercent = data.PostMarketChangePercent
+			// TODO: Figure out what happens when the futures market isn't ready
+			// If we have future data (likely index), use that instead
+			if (Result{}) != futureData {
+				price = futureData.RegularMarketPrice
+				change = futureData.RegularMarketChange
+				changePercent = futureData.RegularMarketChangePercent
+			}
 		}
 	case "PRE":
 		status = ""
@@ -83,6 +97,7 @@ func (p *plugin) renderTile(t *tile, data api.Result) *[]byte {
 	} else if change == 0 {
 		arrow = ""
 	}
+	// Use of index futures should hopefully be overriden by a user-provided tile title
 	title := data.Symbol
 	if t.title != "" {
 		title = t.title
@@ -95,6 +110,11 @@ func (p *plugin) updateTiles(tiles []*tile) {
 	for _, t := range tiles {
 		if t.symbol != "" {
 			symbols = append(symbols, t.symbol)
+			// Append futures if we are tracking an index
+			index_future := p.index[t.symbol]
+			if index_future != "" {
+				symbols = append(symbols, index_future)
+			}
 		}
 	}
 	if len(symbols) == 0 {
@@ -105,7 +125,7 @@ func (p *plugin) updateTiles(tiles []*tile) {
 		return
 	}
 	for _, t := range tiles {
-		b := p.renderTile(t, stocks[t.symbol])
+		b := p.renderTile(t, stocks[t.symbol], stocks[p.index[t.symbol]])
 		err := p.sd.SetImage(t.context, *b)
 		if err != nil {
 			log.Fatalf("sd.SetImage: %v\n", err)
