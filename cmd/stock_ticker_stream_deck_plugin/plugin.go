@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"image/color"
 	"log"
 	"strings"
 	"time"
@@ -63,6 +64,7 @@ func (p *plugin) renderTile(t *tile, data api.Result, futureData api.Result) *[]
 		// Swap between regular and pre
 		if p.state {
 			status = ""
+			statusColor = &color.RGBA{0x41, 0x69, 0xe1, 0xff} // Royal blue
 			price = data.RegularMarketPrice
 			change = data.RegularMarketChange
 			changePercent = data.RegularMarketChangePercent
