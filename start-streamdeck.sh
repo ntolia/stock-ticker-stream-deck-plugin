@@ -1,2 +1,2 @@
 #!/bin/sh
-'/Applications/Stream Deck.app/Contents/MacOS/Stream Deck'
+'/Applications/Elgato Stream Deck.app/Contents/MacOS/Stream Deck'
