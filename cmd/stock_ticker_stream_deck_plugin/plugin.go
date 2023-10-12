@@ -74,7 +74,7 @@ func (p *plugin) renderTile(t *tile, data api.Result, futureData api.Result) *[]
 			changePercent = data.PostMarketChangePercent
 			// TODO: Figure out what happens when the futures market isn't ready
 			// If we have future data (likely index), use that instead
-			if (Result{}) != futureData {
+			if (api.Result{}) != futureData {
 				price = futureData.RegularMarketPrice
 				change = futureData.RegularMarketChange
 				changePercent = futureData.RegularMarketChangePercent
